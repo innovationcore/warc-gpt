@@ -7,10 +7,10 @@ from flask import current_app, jsonify, request, Response
 
 from warc_gpt import WARC_RECORD_DATA
 from warc_gpt.utils import list_available_models, get_limiter
-
-
+import logging
+logging.basicConfig(level=logging.DEBUG)  # Set logging level as needed
 API_COMPLETE_RATE_LIMIT = os.environ["API_COMPLETE_RATE_LIMIT"]
-
+import json
 
 @current_app.route("/api/complete", methods=["POST"])
 @get_limiter().limit(API_COMPLETE_RATE_LIMIT)
@@ -91,17 +91,16 @@ def post_complete():
             )
 
     #
-    # Validate "temperature" if provided
+    # Always validate "temperature" for llm-factory
     #
-    if "temperature" in input:
-        try:
-            temperature = float(input["temperature"])
-            assert temperature >= 0.0
-        except Exception:
-            return (
-                jsonify({"error": "temperature must be a float superior or equal to 0.0."}),
-                400,
-            )
+    try:
+        temperature = float(input["temperature"])
+        assert temperature > 0.0
+    except Exception:
+        return (
+            jsonify({"error": "temperature must be a float greater than 0.0."}),
+            400,
+        )
 
     #
     # Validate "max_tokens" if provided
@@ -191,19 +190,18 @@ def post_complete():
         else:
             openai_client = OpenAI()
 
-            stream = openai_client.chat.completions.create(
+            chat_completion = openai_client.chat.completions.create(
                 model=model.replace("openai/", ""),
                 temperature=temperature,
                 max_tokens=max_tokens if max_tokens else None,
                 messages=[{"role": "user", "content": prompt}],
-                stream=True,
             )
 
             def generate_openai():
-                for chunk in stream:
-                    yield chunk.choices[0].delta.content or ""
+                return chat_completion.choices[0].message.content or ""
+                #return str(chat_completion)
 
-            return Response(generate_openai(), mimetype="text/plain")
+            return generate_openai()
     except Exception:
         current_app.logger.debug(traceback.format_exc())
         return jsonify({"error": f"Could not run completion against {model}."}), 500

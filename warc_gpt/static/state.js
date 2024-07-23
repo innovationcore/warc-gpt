@@ -30,7 +30,7 @@ export const state = {
   searchResults: [],
   message: null,
   model: constants.default_model,
-  temperature: 0.0,
+  temperature: 0.1,
   maxTokens: null,
   searchEnabled: true,
   historyEnabled: true,
