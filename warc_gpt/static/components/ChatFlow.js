@@ -1,5 +1,17 @@
 import { state } from "../state.js";
 
+// Get the pathname from the current URL
+const pathname = window.location.pathname; // e.g., "/celt"
+
+// Split the pathname by "/" and remove empty segments
+const pathSegments = pathname.split('/').filter(Boolean);
+
+// Extract the first segment
+const rootURL = pathSegments[0] ? `/${pathSegments[0]}` : '/'; // Ensure '/' is in front
+
+console.log('Root URL:', rootURL);
+
+
 /**
  * UI Element containing:
  * - List of chat "bubbles" from the user, AI and system.
@@ -56,7 +68,7 @@ export class ChatFlow extends HTMLElement {
     // Perform search
     if (searchEnabled === true) {
       try {
-        const response = await fetch("/api/search", {
+        const response = await fetch(rootURL + "/api/search", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ message }),
@@ -157,7 +169,7 @@ export class ChatFlow extends HTMLElement {
     // Start completion request
     //
     try {
-      response = await fetch("/api/complete", {
+      response = await fetch(rootURL + "/api/complete", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
